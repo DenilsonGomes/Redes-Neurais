@@ -1,34 +1,77 @@
 %Autor: Varner Damasceno Junior
 %Graduando em Engenharia da Computação
-%Inteligência Computacional - Dr. Jarbas Joaci
 
+clear;
 clc
-clf
-clear
-load aerogerador.dat; %Carrega a base de dados
-X1 = aerogerador(:,1); %X é a velocidade do vento
-Y = aerogerador(:,2); %Y é a potencia gerada
-plot(X1,Y); %plota os dados
-hold on; %segura o grafico
+close all
 
-%construir vetor de entrada com Baes = -1
-X = [-ones(length(X1),1),X1]'; % vetor de entradas X(i) = [Baes,X(i)]
-[atributos,~] = size(X); %retorna o numero de atributos com o Baes
-%iniciar W1 aleatoriamente
-n = input('Digite o numero de neuronios da camada oculta: '); %recebe o numero de neuronios da camada oculta
-for i=1:n
-    for j=1:atributos
-        W1(i,j) = rand(1); %preenche W1 com numeros aleatorios
+load 'iris_log.dat';
+q = 3; %qtd de neurônios 
+p = 4; %qtd atributos
+n = 0.001; %taxa de aprendizagem
+X = iris_log(:,1:4);
+D = iris_log(:,5:7);
+x_ones = -ones(150,1);
+X = [x_ones X];
+W = zeros(q,p+1);
+X = X';
+D = D';
+%----------------método hold-olt-------------------------------------------
+XT = [X(:,36:50) X(:,86:100) X(:,136:150)];
+for k = 1 : 3000
+    for i = [1 : 35, 100:135, 50:85]
+        Y = W*X(:,i);
+        E = D(:,i) - Y;
+        A = (X(:,i))';
+        W = W + n*E*A;
     end
 end
 
-%Treinando
-% XTreino = X(:,1:round(0.70*length(X1)));
-% YTreino = Y(1:round(0.70*length(X1)));
-W2 = (pinv(sigmf(W1*X,[1 1]))'*Y)';
+YT = W*XT;
+fprintf('método hold-out: \n');
+disp(YT');
 
-%Obtendo saida
-Yout = (W2*sigmf(W1*X,[1 1]))';
+%----------------método 10-fold--------------------------------------------
+W = zeros(q,p+1);
+fprintf('método 10-fold: ');
+for x = 1 : 10
+    if (x==1)
+        lista = [x*15+1 : 150];
+    else
+        lista = [1:(x-1)*15+1, x*15+1 : 150];
+    end
+    for i = lista
+        Y = W*X(:,i);
+        E = D(:,i) - Y;
+        A = (X(:,i))';
+        W = W + n*E*A;
+       
+    end
+    XT = X(:,(x-1)*15+1:x*15);
+    YT(:,(x-1)*15+1:x*15) = W*XT;
+end
+fprintf('\n');
+disp(YT');
 
-%Verificando qualidade do modelo por R²
-R(Y,Yout)
+
+%----------------leav-one-out--------------------------------------------
+W = zeros(q,p+1);
+fprintf('método leave-one-out: ');
+for x = 1 : 150
+    if (x==1)
+        lista = [x+1 : 150];
+    else
+        lista = [1:x-1, x+1 : 150];
+    end
+    for i = lista
+        Y = W*X(:,i);
+        E = D(:,i) - Y;
+        A = (X(:,i))';
+        W = W + n*E*A;
+       
+    end
+    XT = X(:,x);
+    YT(:,x) = W*XT;
+end
+fprintf('\n');
+disp(YT');
